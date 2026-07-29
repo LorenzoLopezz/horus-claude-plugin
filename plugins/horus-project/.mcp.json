@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "horus-project": {
+      "type": "http",
+      "url": "${HORUS_MCP_URL:-https://horus.egob.sv/mcp/proyectos}",
+      "headersHelper": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/headers.sh\""
+    }
+  }
+}

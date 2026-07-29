@@ -1,0 +1,20 @@
+{
+  "name": "horus",
+  "owner": {
+    "name": "Lorenzo López",
+    "url": "https://github.com/LorenzoLopezz"
+  },
+  "metadata": {
+    "description": "Plugins de Claude Code para Horus Project",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "horus-project",
+      "source": "./plugins/horus-project",
+      "description": "Conecta Claude Code con el MCP de Horus Project (proyectos y nodos) e incluye la skill de uso.",
+      "category": "productivity",
+      "keywords": ["horus", "mcp", "proyectos", "nodos"]
+    }
+  ]
+}
