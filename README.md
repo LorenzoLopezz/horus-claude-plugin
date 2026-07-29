@@ -62,7 +62,8 @@ engranaje del entorno:
 
 1. **Network access**: elige **Custom**, agrega `horus.egob.sv` y marca *Also include default list
    of common package managers* para no perder npm, PyPI y compañía.
-2. **Environment variables**: agrega `HORUS_CLIENT_ID` y `HORUS_REFRESH_TOKEN` (o `HORUS_TOKEN`).
+2. **Environment variables**: agrega `HORUS_CLIENT_ID` y `HORUS_CLIENT_SECRET` de la credencial de
+   cliente (ver [Crear la credencial de cliente](#crear-la-credencial-de-cliente)).
 
 Si el repo del proyecto tiene su `.claude/` ignorado, acuérdate de destaparlo, porque si no el
 settings nunca llega a la sesión:
@@ -74,21 +75,33 @@ settings nunca llega a la sesión:
 
 ## Cómo resuelve la autenticación
 
-Horus expone OAuth 2.1 con `authorization_code` + `refresh_token`, PKCE y cliente público
-(`token_endpoint_auth_methods_supported: ["none"]`). No hay `client_credentials`, así que el
-plugin usa `headersHelper` para cubrir los dos escenarios:
+El MCP de Horus acepta dos esquemas: el OAuth 2.1 de Passport (`authorization_code` + PKCE, para
+clientes con navegador) y una credencial de cliente (`client_credentials`) para agentes que no
+pueden abrir un navegador. `scripts/headers.sh` elige según las variables presentes:
 
 | Escenario | Variables | Qué hace `scripts/headers.sh` |
 | --- | --- | --- |
 | Sesión local | ninguna | Devuelve `{}` y deja que Claude Code haga el OAuth por navegador desde `/mcp` |
-| Sesión cloud, token directo | `HORUS_TOKEN` | Manda `Authorization: Bearer $HORUS_TOKEN` |
-| Sesión cloud, refresh | `HORUS_REFRESH_TOKEN`, `HORUS_CLIENT_ID` | Canjea el refresh token en `/oauth/token` en cada conexión y guarda el refresh rotado en `$CLAUDE_PLUGIN_DATA/refresh_token` |
+| Sesión cloud (recomendado) | `HORUS_CLIENT_ID`, `HORUS_CLIENT_SECRET` | Pide un access token a `/api/oauth/token` con `grant_type=client_credentials` en cada conexión |
+| Token puntual | `HORUS_TOKEN` | Manda `Authorization: Bearer $HORUS_TOKEN` |
+| Refresh de Passport | `HORUS_REFRESH_TOKEN`, `HORUS_OAUTH_CLIENT_ID` | Canjea el refresh token en `/oauth/token` y guarda el rotado en `$CLAUDE_PLUGIN_DATA/refresh_token` |
 
 `HORUS_MCP_URL` permite apuntar a otra instancia (por defecto `https://horus.egob.sv/mcp/proyectos`);
-`HORUS_BASE_URL` solo hace falta si el endpoint de OAuth no vive en el mismo host que el MCP.
+`HORUS_BASE_URL` solo hace falta si los endpoints de OAuth no viven en el mismo host que el MCP.
 
 Cuando una tool devuelve 401 o 403, Claude Code vuelve a ejecutar el helper, reconecta con los
 encabezados nuevos y reintenta la llamada una vez.
+
+### Crear la credencial de cliente
+
+Desde tu cuenta en Horus, en la sección de credenciales OAuth (`/api/cuenta/oauth-client`), crea una
+credencial y otórgale las acciones que quieras que el agente pueda ejecutar; como mínimo
+`proyecto_listar` para listar proyectos. Guarda el `client_id` y el `client_secret` que devuelve.
+
+La credencial queda asociada a tu usuario: el MCP actúa **como vos**, sobre los proyectos en los que
+participás y con los permisos que le concediste a esa credencial, nunca más que eso. El access token
+que emite dura lo que indique `OAUTH_ACCESS_TOKEN_TTL_MINUTES` (60 minutos por defecto) y el helper
+pide uno nuevo en cada conexión, así que no hay nada que renovar a mano.
 
 ## Publicar cambios
 
@@ -107,19 +120,17 @@ actualización se distribuya.
 ## Limitaciones conocidas
 
 - **Las variables del entorno cloud no son un almacén de secretos.** Cualquiera que use ese entorno
-  las puede leer, y los propios docs de Claude Code desaconsejan poner credenciales ahí. Úsalo con
-  un usuario de servicio de alcance reducido, no con tu cuenta personal.
-- **El refresh token de Passport rota y se revoca al usarse.** El helper guarda el token rotado en
-  `$CLAUDE_PLUGIN_DATA`, con lo que las reconexiones dentro de una misma máquina o sesión siguen
-  funcionando; pero el valor que dejaste en las variables de entorno queda inservible tras el primer
-  canje, así que una sesión cloud nueva necesita uno fresco.
-- **La salida buena es del lado servidor**: agregar `client_credentials` (o un endpoint de token de
-  servicio de larga vida) al OAuth de Horus elimina las dos limitaciones anteriores y deja el plugin
-  autosuficiente en la nube. Mientras tanto, la alternativa sin mantenimiento es registrar
-  `https://horus.egob.sv/mcp/proyectos` como *custom connector* en
-  [claude.ai/customize/connectors](https://claude.ai/customize/connectors): el OAuth se hace en el
-  navegador, los tokens quedan del lado de Anthropic y el tráfico no pasa por la lista de dominios
-  permitidos. Esa vía da el MCP pero no la skill; el plugin sigue siendo útil para eso.
+  puede leer el `client_secret`, y los propios docs de Claude Code desaconsejan poner credenciales
+  ahí. Crea una credencial dedicada, concédele solo las acciones que el agente necesita, y revócala
+  desde Horus si el entorno deja de ser tuyo.
+- **El grant `client_credentials` no se anuncia en el discovery OAuth del MCP.** Los metadatos de
+  `/.well-known/oauth-authorization-server` describen el servidor de Passport, que vive en otro
+  endpoint (`/oauth/token`); la credencial de cliente se emite en `/api/oauth/token`. Por eso el
+  plugin la conoce por configuración y no por descubrimiento: un cliente MCP genérico solo verá el
+  flujo de navegador.
+- **El refresh token de Passport rota y se revoca al usarse.** Solo aplica al modo de respaldo
+  `HORUS_REFRESH_TOKEN`: el valor que dejes en las variables de entorno queda inservible tras el
+  primer canje. Usa `client_credentials` en su lugar.
 - `scripts/cache.sh` es una copia del stub que el backend de Horus sirve a sus instaladores
   (`backend/resources/stubs/mcp/cache-horus-project-mcp.sh.stub`). Si cambia allá, cópialo aquí.
 
@@ -129,5 +140,6 @@ actualización se distribuya.
 | --- | --- |
 | `/mcp` muestra el servidor como *needs authentication* | No hay token en cloud, o el refresh ya fue revocado |
 | El plugin no aparece en la sesión cloud | `.claude/settings.json` no está commiteado en el repo del proyecto |
+| El helper devuelve `{}` y el MCP pide autenticación | El `client_secret` es incorrecto, la credencial está inactiva o no alcanza `/api/oauth/token` |
 | Las tools existen pero todo devuelve 401 | `horus.egob.sv` no está en la lista de dominios permitidos del entorno |
 | `Plugin directory not found` | La ruta `source` de `marketplace.json` no coincide con la carpeta del plugin |
