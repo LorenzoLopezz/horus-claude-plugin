@@ -46,6 +46,12 @@ cancelados o bloqueados, envía `categorias` explícitamente. No caches el lista
 - `listar-nodos`: lista los nodos de un proyecto; sin `categorias`, devuelve solo nodos abiertos.
 - `listar-mis-nodos`: lista los nodos asignados al usuario; sin `categorias`, usa sus estados
   predeterminados.
+- `contar-nodos-asignados-por-usuario`: cuenta los nodos asignados a cada usuario visible y los
+  ordena de mayor a menor. Acepta `id_proyecto`, `id_grupo` y `categorias`; sin `categorias`,
+  incluye todos los estados.
+- `listar-nodos-de-usuario`: lista los nodos asignados a un usuario específico. Requiere
+  `id_usuario` y acepta `id_proyecto`, `id_grupo` y `categorias`; sin `categorias`, incluye todos
+  los estados.
 - `ver-nodo`: consulta el detalle de un nodo.
 - `crear-nodo`: crea un nodo en un proyecto.
 - `actualizar-nodo`: modifica únicamente los campos enviados explícitamente.

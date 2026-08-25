@@ -1,7 +1,7 @@
 {
   "name": "horus-project",
   "displayName": "Horus Project",
-  "version": "0.2.0",
+  "version": "0.2.0+codex.20260825054221",
   "description": "Servidor MCP de Horus Project (proyectos y nodos) más la skill que explica cómo usarlo.",
   "author": {
     "name": "Lorenzo López"
