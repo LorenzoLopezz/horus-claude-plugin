@@ -1,64 +1,101 @@
 ---
 name: horus-project
-description: Explica cómo usar el servidor MCP "horus-project" (proyectos y nodos de Horus Project) y qué hacer cuando una tool falla por token OAuth expirado.
+description: Explica cómo usar el servidor MCP "horus-project" (proyectos, nodos y equipos de Horus Project) y qué hacer cuando una tool falla por token OAuth expirado.
 ---
 
 # MCP horus-project
 
-El servidor MCP "horus-project" expone los proyectos y nodos del usuario autenticado:
-listar proyectos, ver/crear/actualizar nodos, y mover nodos por su workflow. El acceso está
-limitado a los proyectos en los que el usuario participa y a los permisos que tiene asignados.
+El servidor MCP "horus-project" expone los proyectos, nodos y equipos (grupos) del usuario
+autenticado: listar proyectos, consultar equipos y miembros, ver/crear/actualizar nodos, leer
+documentos y mover nodos por su workflow. El acceso está limitado a los recursos en los que el
+usuario participa y a los permisos que tiene asignados.
 
-Las tools de este plugin aparecen con el nombre `mcp__plugin_horus-project_horus-project__<tool>`.
+En Claude Code, las tools de este plugin aparecen con el nombre
+`mcp__plugin_horus-project_horus-project__<tool>`.
 
 ## Autenticación
 
 El servidor usa OAuth 2.1 (authorization_code + PKCE).
 
 - En sesiones locales, el login se hace una sola vez en el navegador desde `/mcp`.
-- En sesiones cloud no hay navegador: el plugin toma el token de `HORUS_TOKEN`, o lo renueva
-  con `HORUS_REFRESH_TOKEN` + `HORUS_CLIENT_ID`, según lo configurado en el entorno.
+- En sesiones cloud, el plugin puede tomar `HORUS_TOKEN` o solicitar un token con
+  `HORUS_CLIENT_ID` y `HORUS_CLIENT_SECRET`, según la configuración del entorno.
+
+## Tools disponibles
+
+### Proyectos y catálogos
+
+- `listar-proyectos`: lista los proyectos en los que participa el usuario.
+- `listar-estados-proyecto`: lista los estados disponibles de un proyecto.
+- `listar-tipos-nodo`: lista los tipos de nodo.
+- `listar-prioridades`: lista las prioridades.
+
+### Equipos
+
+Para responder en qué trabaja un equipo, no inventes el `id_grupo`:
+
+1. Llama a `listar-equipos` y resuelve el equipo por `nombre` o `codigo`.
+2. Con ese `id_grupo`, llama a `listar-nodos-equipo` para consultar el trabajo o a
+   `listar-miembros-equipo` para consultar sus integrantes.
+
+`listar-nodos-equipo` sin `categorias` devuelve solo estados abiertos. Para consultar terminados,
+cancelados o bloqueados, envía `categorias` explícitamente. No caches el listado de equipos.
+
+### Nodos
+
+- `listar-nodos`: lista los nodos de un proyecto; sin `categorias`, devuelve solo nodos abiertos.
+- `listar-mis-nodos`: lista los nodos asignados al usuario; sin `categorias`, usa sus estados
+  predeterminados.
+- `ver-nodo`: consulta el detalle de un nodo.
+- `crear-nodo`: crea un nodo en un proyecto.
+- `actualizar-nodo`: modifica únicamente los campos enviados explícitamente.
+- `cambiar-fecha-fin-nodo`: cambia la fecha de finalización de un nodo.
+- `avanzar-nodo` y `retroceder-nodo`: mueven un nodo por su workflow.
+
+Las tools de nodos aceptan el UUID completo o el último bloque de 12 caracteres del UUID. Si el
+usuario comparte un enlace corto como `https://app.example.com/n/1234abcd5678`, envía
+`1234abcd5678` como `id_proyecto_nodo`.
+
+No llames a `actualizar-nodo` por iniciativa propia. Úsala únicamente cuando el usuario pida
+explícitamente cambiar datos del nodo. Para cambiar de estado usa `avanzar-nodo` o
+`retroceder-nodo`, no `actualizar-nodo`.
+
+El campo `participantes` de `actualizar-nodo` reemplaza la lista actual de responsables; una lista
+vacía la limpia. Solo envíalo cuando el usuario solicite modificar responsables.
+
+### Documentos y discusiones
+
+- `leer-documento-proyecto`: lee un documento Markdown del proyecto.
+- `listar-discusion-nodo`: consulta la discusión de un nodo.
+- `agregar-discusion-nodo`: agrega un comentario Markdown a un nodo.
 
 ## Caché local del listado de proyectos
 
-Antes de llamar a la tool `listar-proyectos`, ejecuta primero:
+Antes de llamar a `listar-proyectos`, ejecuta primero:
 
     "${CLAUDE_PLUGIN_ROOT}/scripts/cache.sh" get proyectos
 
-Si el comando imprime datos y termina con código 0, usa ese JSON como resultado y NO llames a
-la tool MCP. Si termina con código 1 (sin salida), llama a `listar-proyectos` normalmente y
-guarda el resultado para que la próxima consulta (hasta por 1 día) no necesite ir al servidor:
+Si el comando imprime datos y termina con código 0, usa ese JSON y no llames a la tool MCP. Si
+termina con código 1, llama a `listar-proyectos` y guarda el resultado:
 
     <resultado-json-de-la-tool> | "${CLAUDE_PLUGIN_ROOT}/scripts/cache.sh" set proyectos
 
-Si el usuario indica explícitamente que la lista de proyectos cambió (se creó/eliminó un
-proyecto) y quiere ver el cambio reflejado de inmediato, ejecuta
-`"${CLAUDE_PLUGIN_ROOT}/scripts/cache.sh" clear proyectos` antes de volver a listar.
+Si el usuario indica explícitamente que la lista de proyectos cambió, ejecuta:
 
-En Windows sin bash, usa `~/.horus-project-mcp/bin/cache.ps1` con los mismos subcomandos, o
-salta el caché y llama a la tool directamente.
+    "${CLAUDE_PLUGIN_ROOT}/scripts/cache.sh" clear proyectos
 
-## Actualizar un nodo
+En Windows sin bash, usa `~/.horus-project-mcp/bin/cache.ps1` con los mismos subcomandos o salta
+el caché y llama a la tool directamente.
 
-La tool `actualizar-nodo` modifica título, detalle (Markdown), prioridad, peso estimado/revisado,
-fechas, nodo padre y orden de un nodo existente. Solo se envían y modifican los campos indicados
-explícitamente; el resto del nodo queda intacto.
+## Si una tool falla por autenticación
 
-No llames a `actualizar-nodo` por iniciativa propia. Úsala únicamente cuando el usuario pida de
-forma explícita cambiar uno o más de esos datos de un nodo (por ejemplo "cambia el título de
-TAR-0004" o "sube la prioridad de este nodo"). Para mover un nodo entre estados del workflow usa
-`avanzar-nodo` / `retroceder-nodo`, no `actualizar-nodo`.
+Si una tool devuelve `401` o indica que el token expiró:
 
-## Si una tool de "horus-project" falla con un error de autenticación (401/token expirado)
+1. Informa al usuario que la sesión con el servidor MCP "horus-project" expiró.
+2. En Claude Code local, pídele que ejecute `/mcp` y vuelva a iniciar sesión.
+3. En Codex, pídele que ejecute `codex mcp login horus-project`.
+4. En OpenCode, pídele que ejecute `opencode mcp auth horus-project`.
+5. Reintenta la operación una vez que confirme el nuevo login.
 
-Claude Code vuelve a ejecutar el `headersHelper` y reintenta una vez por su cuenta. Si el error
-persiste, la sesión con Horus expiró:
-
-1. Informa al usuario que su sesión con el servidor MCP "horus-project" expiró.
-2. En una sesión local, pídele que ejecute `/mcp` y vuelva a iniciar sesión en "horus-project".
-   En una sesión cloud, pídele que actualice `HORUS_TOKEN` o `HORUS_REFRESH_TOKEN` en las
-   variables de entorno del entorno cloud y abra una sesión nueva.
-3. Vuelve a intentar la operación una vez que confirme que volvió a iniciar sesión.
-
-No intentes resolverlo de otra forma (por ejemplo, reintentando la misma llamada varias
-veces): el problema es la sesión, no la petición.
+No repitas la misma llamada sin renovar la sesión: el problema es la autenticación, no la
+petición.
