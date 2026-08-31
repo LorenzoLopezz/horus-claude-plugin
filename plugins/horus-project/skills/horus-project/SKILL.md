@@ -11,15 +11,18 @@ documentos y mover nodos por su workflow. El acceso está limitado a los recurso
 usuario participa y a los permisos que tiene asignados.
 
 En Claude Code, las tools de este plugin aparecen con el nombre
-`mcp__plugin_horus-project_horus-project__<tool>`.
+`mcp__plugin_horus-project_horus-project__<tool>`. En Codex, el servidor MCP aparece como
+`horus-project` y las tools se invocan por su nombre (`listar-proyectos`, `listar-nodos`, etc.).
 
 ## Autenticación
 
 El servidor usa OAuth 2.1 (authorization_code + PKCE).
 
-- En sesiones locales, el login se hace una sola vez en el navegador desde `/mcp`.
+- En Claude Code local, el login se hace una sola vez en el navegador desde `/mcp`.
 - En sesiones cloud, el plugin puede tomar `HORUS_TOKEN` o solicitar un token con
   `HORUS_CLIENT_ID` y `HORUS_CLIENT_SECRET`, según la configuración del entorno.
+- En Codex, si la tool devuelve `401` o el servidor aparece sin autenticación, ejecuta
+  `codex mcp login horus-project` y vuelve a intentarlo después de confirmar el login.
 
 ## Tools disponibles
 
@@ -77,6 +80,8 @@ vacía la limpia. Solo envíalo cuando el usuario solicite modificar responsable
 
 ## Caché local del listado de proyectos
 
+### Claude Code
+
 Antes de llamar a `listar-proyectos`, ejecuta primero:
 
     "${CLAUDE_PLUGIN_ROOT}/scripts/cache.sh" get proyectos
@@ -92,6 +97,12 @@ Si el usuario indica explícitamente que la lista de proyectos cambió, ejecuta:
 
 En Windows sin bash, usa `~/.horus-project-mcp/bin/cache.ps1` con los mismos subcomandos o salta
 el caché y llama a la tool directamente.
+
+### Codex
+
+En Codex no asumas que existe `CLAUDE_PLUGIN_ROOT`: el manifiesto de Codex instala la Skill, pero no
+expone esa variable de Claude Code. En ese cliente llama a `listar-proyectos` directamente si no
+dispones de una ruta local conocida para el script de caché.
 
 ## Si una tool falla por autenticación
 

@@ -1,17 +1,19 @@
-# Horus Project — plugin para Claude Code
+# Horus Project — plugins para Claude Code y Codex
 
-Marketplace público con el plugin `horus-project`, que conecta Claude Code con el servidor MCP de
-[Horus Project](https://horus.egob.sv) (proyectos y nodos) y agrega la skill que explica cómo
-usarlo. El código del producto vive en un repo aparte; aquí solo está lo que Claude Code necesita
-descargar.
+Marketplaces públicos con el plugin `horus-project`, que conecta Claude Code al servidor MCP de
+[Horus Project](https://horus.egob.sv) (proyectos, nodos y equipos) y habilita en Codex la Skill que
+explica cómo usarlo. El código del producto vive en un repo aparte; aquí solo está lo que cada cliente
+necesita descargar.
 
 ## Contenido
 
 ```
-.claude-plugin/marketplace.json          # catálogo
+.claude-plugin/marketplace.json          # catálogo de Claude Code
+.agents/plugins/marketplace.json         # catálogo de Codex
 plugins/horus-project/
-├── .claude-plugin/plugin.json           # manifiesto del plugin
-├── .mcp.json                            # servidor MCP http + headersHelper
+├── .claude-plugin/plugin.json           # manifiesto de Claude Code
+├── .codex-plugin/plugin.json            # manifiesto de Codex
+├── .mcp.json                            # servidor MCP http + headersHelper para Claude Code
 ├── scripts/headers.sh                   # resuelve el Authorization en cada conexión
 ├── scripts/cache.sh                     # caché en disco del listado de proyectos
 └── skills/horus-project/SKILL.md        # skill de uso del MCP
@@ -37,6 +39,27 @@ Si ya tenías el MCP `horus-project` configurado a mano en `~/.claude.json` (por
 ```bash
 claude mcp remove horus-project
 ```
+
+## Instalar en Codex
+
+Agrega el marketplace público una sola vez por máquina e instala el plugin. La Skill queda
+disponible junto con el plugin:
+
+```bash
+codex plugin marketplace add LorenzoLopezz/horus-claude-plugin
+codex plugin add horus-project@horus
+```
+
+Después, inicia una tarea nueva para que Codex cargue la Skill. El manifiesto de Codex empaqueta la
+Skill y no duplica el servidor MCP: si todavía no lo tienes configurado, agrégalo y autentícalo una
+sola vez:
+
+```bash
+codex mcp add horus-project --url https://horus.egob.sv/mcp/proyectos
+codex mcp login horus-project
+```
+
+Si `codex mcp list` ya muestra `horus-project`, omite esos dos comandos.
 
 ## Instalar en sesiones cloud (claude.ai/code)
 
