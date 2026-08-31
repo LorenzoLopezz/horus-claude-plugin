@@ -1,0 +1,20 @@
+{
+  "name": "horus",
+  "interface": {
+    "displayName": "Horus Project"
+  },
+  "plugins": [
+    {
+      "name": "horus-project",
+      "source": {
+        "source": "local",
+        "path": "./plugins/horus-project"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

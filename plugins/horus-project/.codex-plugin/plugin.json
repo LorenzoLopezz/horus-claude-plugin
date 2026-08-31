@@ -1,0 +1,22 @@
+{
+  "name": "horus-project",
+  "version": "0.2.0+codex.20260831181503",
+  "description": "Skill para consultar y gestionar proyectos, nodos y equipos de Horus Project desde Codex.",
+  "author": {
+    "name": "Lorenzo López",
+    "url": "https://github.com/LorenzoLopezz"
+  },
+  "homepage": "https://horus.egob.sv",
+  "repository": "https://github.com/LorenzoLopezz/horus-claude-plugin",
+  "keywords": ["horus", "mcp", "proyectos", "nodos", "equipos"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Horus Project",
+    "shortDescription": "Consulta y gestiona Horus Project desde Codex.",
+    "longDescription": "Guía a Codex para consultar proyectos, equipos, nodos, documentos y discusiones de Horus Project usando el MCP autenticado del usuario.",
+    "developerName": "Lorenzo López",
+    "category": "Developer Tools",
+    "capabilities": ["Interactive"],
+    "defaultPrompt": "Consulta mis proyectos, equipos y nodos de Horus Project."
+  }
+}
