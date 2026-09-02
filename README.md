@@ -22,6 +22,9 @@ plugins/horus-project/
 Una vez instalado, las tools quedan como `mcp__plugin_horus-project_horus-project__<tool>` y la
 skill se invoca con `/horus-project:horus-project`.
 
+`ver-nodo` incluye los recursos asociados al nodo y `ver-recurso` entrega una URL temporal para
+que el agente descargue y utilice el archivo solicitado.
+
 ## Instalar en Claude Code local
 
 ```

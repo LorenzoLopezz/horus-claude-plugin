@@ -55,7 +55,10 @@ cancelados o bloqueados, envía `categorias` explícitamente. No caches el lista
 - `listar-nodos-de-usuario`: lista los nodos asignados a un usuario específico. Requiere
   `id_usuario` y acepta `id_proyecto`, `id_grupo` y `categorias`; sin `categorias`, incluye todos
   los estados.
-- `ver-nodo`: consulta el detalle de un nodo.
+- `ver-nodo`: consulta el detalle de un nodo, incluida su lista de recursos.
+- `ver-recurso`: devuelve los metadatos y la URL temporal de descarga de un recurso listado por
+  `ver-nodo`, para que el agente pueda descargarlo y utilizarlo según la solicitud del usuario;
+  los documentos incluyen además su contenido Markdown.
 - `crear-nodo`: crea un nodo en un proyecto.
 - `actualizar-nodo`: modifica únicamente los campos enviados explícitamente.
 - `cambiar-fecha-fin-nodo`: cambia la fecha de finalización de un nodo.

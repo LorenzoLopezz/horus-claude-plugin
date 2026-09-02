@@ -1,6 +1,6 @@
 {
   "name": "horus-project",
-  "version": "0.2.0+codex.20260831181503",
+  "version": "0.2.0+codex.20260902014817",
   "description": "Skill para consultar y gestionar proyectos, nodos y equipos de Horus Project desde Codex.",
   "author": {
     "name": "Lorenzo López",
